@@ -9,7 +9,7 @@ Both versions search for a city and use the free Open-Meteo geocoding and foreca
 
 ## Web dashboard
 
-The web version asks for a city and state, region, or country, then asks you to confirm a matching location before loading weather. It shows current conditions, humidity, wind, precipitation, a scrollable 24-hour forecast, a five-day forecast, and Celsius/Fahrenheit switching.
+The web version asks for a city and state, region, or country, then asks you to confirm a matching location before loading weather. It shows current conditions, humidity, wind, precipitation, a scrollable 24-hour forecast, a five-day forecast, Celsius/Fahrenheit switching, and a saved-cities panel that remembers up to six confirmed cities in the browser.
 
 To preview it locally, start a small web server from the project folder:
 

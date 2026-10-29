@@ -55,6 +55,18 @@
         <div class="location-list" id="location-list"></div>
       </section>
 
+      <section class="saved-panel" aria-labelledby="saved-title">
+        <div class="section-heading saved-heading">
+          <div>
+            <p class="eyebrow">YOUR WEATHER LIST</p>
+            <h2 id="saved-title">Saved cities</h2>
+          </div>
+          <span class="saved-count" id="saved-count">0 / 6</span>
+        </div>
+        <p class="saved-empty" id="saved-empty">Confirm a city above to start your list. Each city will show its current temperature and conditions.</p>
+        <div class="saved-cities-list" id="saved-cities-list" aria-live="polite"></div>
+      </section>
+
       <section class="weather-grid" id="weather-content" aria-label="Weather dashboard" hidden>
         <article class="current-card">
           <div class="card-topline">

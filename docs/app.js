@@ -8,12 +8,18 @@ const statusMessage = document.querySelector("#status");
 const weatherContent = document.querySelector("#weather-content");
 const locationChoices = document.querySelector("#location-choices");
 const locationList = document.querySelector("#location-list");
+const savedCitiesList = document.querySelector("#saved-cities-list");
+const savedEmpty = document.querySelector("#saved-empty");
+const savedCount = document.querySelector("#saved-count");
 const forecastList = document.querySelector("#forecast-list");
 const hourlyList = document.querySelector("#hourly-list");
 const unitButtons = [...document.querySelectorAll("[data-unit]")];
+const SAVED_CITIES_KEY = "skyline-saved-cities";
+const MAX_SAVED_CITIES = 6;
 
 let temperatureUnit = "celsius";
 let activeLocation = null;
+let savedCities = readSavedCities();
 
 const weatherTypes = {
   0: ["Clear sky", "☀️"],
@@ -61,6 +67,127 @@ function formatNumber(value) {
 
 function temperatureSymbol(units) {
   return units.temperature_2m ?? (temperatureUnit === "celsius" ? "°C" : "°F");
+}
+
+function locationKey(location) {
+  return String(location.id ?? `${location.latitude},${location.longitude}`);
+}
+
+function readSavedCities() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SAVED_CITIES_KEY) ?? "[]");
+    return Array.isArray(value) ? value.slice(0, MAX_SAVED_CITIES) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCities() {
+  try {
+    localStorage.setItem(SAVED_CITIES_KEY, JSON.stringify(savedCities));
+  } catch {
+    setStatus("Your browser couldn’t save the city list. Weather search still works.", true);
+  }
+}
+
+function weatherCategory(code, temperature, units) {
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snowy";
+  if (code >= 95) return "Stormy";
+  if (temperature <= (units.temperature_2m === "°F" ? 50 : 10)) return "Cold";
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "Rainy";
+  if (code <= 1) return "Sunny";
+  return "Cloudy";
+}
+
+function makeSavedCityCard(location) {
+  const card = document.createElement("article");
+  card.className = "saved-city";
+
+  const top = document.createElement("div");
+  top.className = "saved-city-top";
+  const nameGroup = document.createElement("div");
+  const name = document.createElement("div");
+  name.className = "saved-city-name";
+  name.textContent = location.name;
+  const region = document.createElement("div");
+  region.className = "saved-city-region";
+  region.textContent = [location.admin1, location.country].filter(Boolean).join(", ");
+  nameGroup.append(name, region);
+
+  const remove = document.createElement("button");
+  remove.className = "remove-city";
+  remove.type = "button";
+  remove.setAttribute("aria-label", `Remove ${location.name} from saved cities`);
+  remove.textContent = "×";
+  remove.addEventListener("click", () => {
+    savedCities = savedCities.filter((city) => locationKey(city) !== locationKey(location));
+    saveCities();
+    renderSavedCities();
+  });
+  top.append(nameGroup, remove);
+
+  const weather = document.createElement("div");
+  weather.className = "saved-weather";
+  const condition = document.createElement("div");
+  condition.className = "saved-condition";
+  const icon = document.createElement("span");
+  icon.className = "saved-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "…";
+  const label = document.createElement("span");
+  label.textContent = "Loading weather";
+  condition.append(icon, label);
+  const reading = document.createElement("strong");
+  reading.className = "saved-reading";
+  reading.textContent = "—";
+  weather.append(condition, reading);
+
+  const tag = document.createElement("span");
+  tag.className = "weather-tag";
+  tag.textContent = "Updating";
+  card.append(top, weather, tag);
+  return { card, icon, label, reading, tag };
+}
+
+async function getCurrentWeather(location) {
+  const url = new URL(FORECAST_URL);
+  url.search = new URLSearchParams({
+    latitude: String(location.latitude),
+    longitude: String(location.longitude),
+    current: "temperature_2m,weather_code",
+    temperature_unit: temperatureUnit,
+    timezone: "auto",
+  });
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Weather unavailable");
+  return response.json();
+}
+
+function renderSavedCities(preferredLocation = null, preferredForecast = null) {
+  savedCitiesList.replaceChildren();
+  savedEmpty.hidden = savedCities.length > 0;
+  savedCount.textContent = `${savedCities.length} / ${MAX_SAVED_CITIES}`;
+
+  savedCities.forEach((location) => {
+    const elements = makeSavedCityCard(location);
+    savedCitiesList.append(elements.card);
+    const isCurrent = preferredLocation && locationKey(location) === locationKey(preferredLocation);
+    const forecastPromise = isCurrent ? Promise.resolve(preferredForecast) : getCurrentWeather(location);
+    forecastPromise.then((forecast) => {
+      const current = forecast.current;
+      const units = forecast.current_units;
+      const [description, symbol] = weatherFor(current.weather_code);
+      const category = weatherCategory(current.weather_code, Number(current.temperature_2m), units);
+      elements.icon.textContent = symbol;
+      elements.label.textContent = description;
+      elements.reading.textContent = `${formatNumber(current.temperature_2m)}${units.temperature_2m}`;
+      elements.tag.textContent = category;
+      elements.tag.className = `weather-tag ${category.toLowerCase()}`;
+    }).catch(() => {
+      elements.label.textContent = "Weather unavailable";
+      elements.tag.textContent = "Try again later";
+    });
+  });
 }
 
 async function findCities(cityName, regionName) {
@@ -203,7 +330,12 @@ async function selectLocation(location) {
   try {
     const forecast = await getForecast(location);
     activeLocation = location;
+    if (!savedCities.some((city) => locationKey(city) === locationKey(location))) {
+      savedCities = [...savedCities, location].slice(-MAX_SAVED_CITIES);
+      saveCities();
+    }
     renderWeather(location, forecast);
+    renderSavedCities(location, forecast);
   } catch (error) {
     setStatus(error instanceof TypeError ? "Couldn’t connect. Check your internet and try again." : error.message, true);
   }
@@ -265,9 +397,16 @@ unitButtons.forEach((button) => {
     });
     if (activeLocation) {
       getForecast(activeLocation)
-        .then((forecast) => renderWeather(activeLocation, forecast))
+        .then((forecast) => {
+          renderWeather(activeLocation, forecast);
+          renderSavedCities(activeLocation, forecast);
+        })
         .catch(() => setStatus("Couldn’t update units. Try again in a moment.", true));
+    } else {
+      renderSavedCities();
     }
   });
 });
+
+renderSavedCities();
 

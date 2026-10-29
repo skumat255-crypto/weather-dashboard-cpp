@@ -65,6 +65,28 @@ h1 { margin-bottom: 7px; font: 800 clamp(27px, 4vw, 38px)/1.15 var(--font-displa
 .location-option strong { display: block; color: #334159; font-size: 12px; }
 .location-option small { display: block; margin-top: 4px; color: #8995a8; font-size: 10px; }
 .location-arrow { color: #7792df; font-size: 17px; }
+.saved-panel { margin: 6px 0 18px; padding: 21px 24px; border: 1px solid #e8edf4; border-radius: 19px; background: #fff; box-shadow: 0 15px 40px #34476c0a; }
+.saved-heading { margin-bottom: 15px; }
+.saved-heading .eyebrow { margin-bottom: 6px; }
+.saved-heading h2 { margin: 0; font: 700 17px var(--font-display); letter-spacing: -.35px; }
+.saved-count { padding: 6px 9px; border-radius: 8px; color: #8090aa; background: #f3f6fb; font-size: 10px; font-weight: 700; }
+.saved-empty { margin: 0; color: #8995a8; font-size: 12px; }
+.saved-cities-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 9px; }
+.saved-city { min-width: 0; padding: 13px 14px 12px; border: 1px solid #edf0f6; border-radius: 14px; background: linear-gradient(145deg, #fbfcff, #fff); }
+.saved-city-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.saved-city-name { overflow: hidden; color: #35435a; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.saved-city-region { overflow: hidden; margin-top: 4px; color: #8c98aa; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.remove-city { width: 24px; height: 24px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 7px; color: #9aa5b5; background: transparent; font-size: 17px; line-height: 1; }
+.remove-city:hover, .remove-city:focus-visible { color: #b94f64; outline: 0; background: #fff0f2; }
+.saved-weather { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.saved-condition { display: flex; align-items: center; gap: 7px; color: #79869b; font-size: 11px; }
+.saved-icon { font-size: 19px; }
+.saved-reading { color: #334159; font: 700 19px var(--font-display); white-space: nowrap; }
+.weather-tag { display: inline-block; margin-top: 9px; padding: 4px 7px; border-radius: 7px; color: #607cca; background: #eef3ff; font-size: 9px; font-weight: 700; }
+.weather-tag.rainy { color: #397aa7; background: #edf7ff; }
+.weather-tag.cold, .weather-tag.snowy { color: #4f84a9; background: #edf7fb; }
+.weather-tag.cloudy { color: #68778c; background: #f1f3f7; }
+.weather-tag.stormy { color: #785caa; background: #f4efff; }
 
 .weather-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; }
 .current-card, .details-card, .forecast-card { border: 1px solid #e8edf4; border-radius: 22px; box-shadow: 0 15px 40px #34476c0a; }
@@ -138,6 +160,7 @@ h1 { margin-bottom: 7px; font: 800 clamp(27px, 4vw, 38px)/1.15 var(--font-displa
   .details-card { min-height: auto; padding: 22px 23px 16px; }
   .forecast-card { grid-column: auto; padding: 21px 15px 15px; }
   .hourly-card { grid-column: auto; padding: 21px 15px 15px; }
+  .saved-panel { padding: 19px 16px; }
   .hourly-list { grid-auto-columns: 75px; }
   .forecast-list { gap: 6px; }
   .forecast-day { padding: 13px 5px 12px; border-radius: 12px; }

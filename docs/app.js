@@ -6,6 +6,7 @@ const cityInput = document.querySelector("#city-input");
 const statusMessage = document.querySelector("#status");
 const weatherContent = document.querySelector("#weather-content");
 const forecastList = document.querySelector("#forecast-list");
+const hourlyList = document.querySelector("#hourly-list");
 const unitButtons = [...document.querySelectorAll("[data-unit]")];
 
 let temperatureUnit = "celsius";
@@ -76,6 +77,7 @@ async function getForecast(location) {
     longitude: String(location.longitude),
     current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+    hourly: "temperature_2m,precipitation_probability,weather_code",
     temperature_unit: temperatureUnit,
     timezone: "auto",
     forecast_days: "5",
@@ -130,6 +132,45 @@ function renderForecast(daily, units) {
     `H: ${formatNumber(daily.temperature_2m_max[0])}${units.temperature_2m}   L: ${formatNumber(daily.temperature_2m_min[0])}${units.temperature_2m}`;
 }
 
+function clockLabel(dateTime) {
+  const [hourPart, minute = "00"] = dateTime.split("T")[1].split(":");
+  const hour = Number(hourPart);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  return `${hour % 12 || 12}:${minute} ${suffix}`;
+}
+
+function renderHourly(hourly, currentTime, units) {
+  hourlyList.replaceChildren();
+  const firstIndex = hourly.time.findIndex((time) => time >= currentTime);
+  const start = firstIndex < 0 ? 0 : firstIndex;
+  const hours = hourly.time.slice(start, start + 24);
+
+  hours.forEach((time, offset) => {
+    const index = start + offset;
+    const [description, icon] = weatherFor(hourly.weather_code[index]);
+    const item = document.createElement("article");
+    item.className = "hourly-item";
+    item.setAttribute("aria-label", `${clockLabel(time)}: ${description}, ${formatNumber(hourly.temperature_2m[index])}${units.temperature_2m}, rain chance ${hourly.precipitation_probability[index] ?? 0}%`);
+
+    const timeLabel = document.createElement("p");
+    timeLabel.className = "hourly-time";
+    timeLabel.textContent = offset === 0 ? "Now" : clockLabel(time);
+    const symbol = document.createElement("span");
+    symbol.className = "hourly-icon";
+    symbol.setAttribute("aria-hidden", "true");
+    symbol.textContent = icon;
+    const temperature = document.createElement("p");
+    temperature.className = "hourly-temperature";
+    temperature.textContent = `${formatNumber(hourly.temperature_2m[index])}${units.temperature_2m}`;
+    const rain = document.createElement("p");
+    rain.className = "hourly-rain";
+    const chance = hourly.precipitation_probability[index];
+    rain.textContent = chance == null ? "Rain —" : `Rain ${formatNumber(chance)}%`;
+    item.append(timeLabel, symbol, temperature, rain);
+    hourlyList.append(item);
+  });
+}
+
 function renderWeather(location, forecast) {
   const current = forecast.current;
   const units = forecast.current_units;
@@ -149,6 +190,7 @@ function renderWeather(location, forecast) {
   document.querySelector("#precipitation").textContent = `${Number(current.precipitation).toFixed(1)} ${units.precipitation}`;
 
   renderForecast(forecast.daily, units);
+  renderHourly(forecast.hourly, current.time, forecast.hourly_units);
   weatherContent.hidden = false;
   setStatus(`Showing live conditions for ${location.name}.`);
 }

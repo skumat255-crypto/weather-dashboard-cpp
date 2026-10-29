@@ -9,7 +9,7 @@ Both versions search for a city and use the free Open-Meteo geocoding and foreca
 
 ## Web dashboard
 
-The web version has city search, current conditions, humidity, wind, precipitation, a five-day forecast, and Celsius/Fahrenheit switching.
+The web version has city search, current conditions, humidity, wind, precipitation, a scrollable 24-hour forecast, a five-day forecast, and Celsius/Fahrenheit switching.
 
 To preview it locally, start a small web server from the project folder:
 

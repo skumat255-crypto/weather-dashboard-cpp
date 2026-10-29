@@ -29,14 +29,31 @@
           <p class="intro-copy">A little more prepared for wherever today takes you.</p>
         </div>
         <form class="search" id="search-form" role="search">
-          <label class="sr-only" for="city-input">Search for a city</label>
-          <span class="search-icon" aria-hidden="true">⌕</span>
-          <input id="city-input" name="city" type="search" placeholder="Search a city..." autocomplete="off" required>
-          <button type="submit" aria-label="Search city">Search</button>
+          <div class="search-field">
+            <label for="city-input">City</label>
+            <input id="city-input" name="city" type="search" placeholder="e.g. Springfield" autocomplete="address-level2" required>
+          </div>
+          <div class="search-field">
+            <label for="region-input">State / region / country</label>
+            <input id="region-input" name="region" type="text" placeholder="e.g. Illinois, US" autocomplete="address-level1" required>
+          </div>
+          <button type="submit">Find weather</button>
         </form>
       </section>
 
-      <p class="status" id="status" role="status" aria-live="polite">Finding your forecast…</p>
+      <p class="status" id="status" role="status" aria-live="polite">Enter a city and state, region, or country to begin.</p>
+
+      <section class="location-choices" id="location-choices" aria-labelledby="verify-title" hidden>
+        <div class="choices-heading">
+          <div>
+            <p class="eyebrow">VERIFY LOCATION</p>
+            <h2 id="verify-title">Is this the right place?</h2>
+            <p>Choose the matching location to load its weather.</p>
+          </div>
+          <span class="verify-mark" aria-hidden="true">✓</span>
+        </div>
+        <div class="location-list" id="location-list"></div>
+      </section>
 
       <section class="weather-grid" id="weather-content" aria-label="Weather dashboard" hidden>
         <article class="current-card">

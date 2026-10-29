@@ -3,8 +3,11 @@ const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
 const form = document.querySelector("#search-form");
 const cityInput = document.querySelector("#city-input");
+const regionInput = document.querySelector("#region-input");
 const statusMessage = document.querySelector("#status");
 const weatherContent = document.querySelector("#weather-content");
+const locationChoices = document.querySelector("#location-choices");
+const locationList = document.querySelector("#location-list");
 const forecastList = document.querySelector("#forecast-list");
 const hourlyList = document.querySelector("#hourly-list");
 const unitButtons = [...document.querySelectorAll("[data-unit]")];
@@ -60,14 +63,14 @@ function temperatureSymbol(units) {
   return units.temperature_2m ?? (temperatureUnit === "celsius" ? "°C" : "°F");
 }
 
-async function findCity(cityName) {
+async function findCities(cityName, regionName) {
   const url = new URL(GEOCODING_URL);
-  url.search = new URLSearchParams({ name: cityName, count: "1", language: "en", format: "json" });
+  url.search = new URLSearchParams({ name: `${cityName}, ${regionName}`, count: "5", language: "en", format: "json" });
   const response = await fetch(url);
   if (!response.ok) throw new Error("City search is unavailable right now.");
   const data = await response.json();
-  if (!data.results?.length) throw new Error("We couldn’t find that city. Try adding its country.");
-  return data.results[0];
+  if (!data.results?.length) throw new Error("We couldn’t find that city and region. Check the spelling or try the country name.");
+  return data.results;
 }
 
 async function getForecast(location) {
@@ -171,6 +174,41 @@ function renderHourly(hourly, currentTime, units) {
   });
 }
 
+function renderLocationChoices(locations) {
+  locationList.replaceChildren();
+  locations.forEach((location) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "location-option";
+    const text = document.createElement("span");
+    const title = document.createElement("strong");
+    title.textContent = location.name;
+    const details = document.createElement("small");
+    details.textContent = [location.admin1, location.country].filter(Boolean).join(", ") || "Location match";
+    text.append(title, details);
+    const arrow = document.createElement("span");
+    arrow.className = "location-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "→";
+    button.append(text, arrow);
+    button.addEventListener("click", () => selectLocation(location));
+    locationList.append(button);
+  });
+  locationChoices.hidden = false;
+}
+
+async function selectLocation(location) {
+  locationChoices.hidden = true;
+  setStatus(`Getting weather for ${location.name}…`);
+  try {
+    const forecast = await getForecast(location);
+    activeLocation = location;
+    renderWeather(location, forecast);
+  } catch (error) {
+    setStatus(error instanceof TypeError ? "Couldn’t connect. Check your internet and try again." : error.message, true);
+  }
+}
+
 function renderWeather(location, forecast) {
   const current = forecast.current;
   const units = forecast.current_units;
@@ -195,14 +233,14 @@ function renderWeather(location, forecast) {
   setStatus(`Showing live conditions for ${location.name}.`);
 }
 
-async function loadCity(cityName) {
-  setStatus(`Looking up ${cityName.trim()}…`);
+async function loadCity(cityName, regionName) {
+  setStatus(`Looking up ${cityName.trim()}, ${regionName.trim()}…`);
   weatherContent.hidden = true;
+  locationChoices.hidden = true;
   try {
-    const location = await findCity(cityName.trim());
-    const forecast = await getForecast(location);
-    activeLocation = location;
-    renderWeather(location, forecast);
+    const locations = await findCities(cityName.trim(), regionName.trim());
+    renderLocationChoices(locations);
+    setStatus("Choose the matching location to see its weather.");
   } catch (error) {
     setStatus(error instanceof TypeError ? "Couldn’t connect. Check your internet and try again." : error.message, true);
   }
@@ -211,7 +249,8 @@ async function loadCity(cityName) {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const city = cityInput.value.trim();
-  if (city) loadCity(city);
+  const region = regionInput.value.trim();
+  if (city && region) loadCity(city, region);
 });
 
 unitButtons.forEach((button) => {
@@ -232,4 +271,3 @@ unitButtons.forEach((button) => {
   });
 });
 
-loadCity("Mumbai");

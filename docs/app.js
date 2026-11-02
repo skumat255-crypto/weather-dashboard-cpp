@@ -1,9 +1,30 @@
 const API_BASE_URL = (window.WEATHER_API_BASE_URL ?? "").replace(/\/$/, "");
+const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
+const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
 function apiUrl(path, parameters) {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.href);
   url.search = new URLSearchParams(parameters);
   return url;
+}
+
+function providerUrl(base, parameters) {
+  const url = new URL(base);
+  url.search = new URLSearchParams(parameters);
+  return url;
+}
+
+async function fetchWeatherJson(apiRequest, providerRequest, errorMessage) {
+  try {
+    const response = await fetch(apiRequest);
+    if (response.ok) return response.json();
+  } catch {
+    // A public browser request can still work if the hosted proxy is unavailable.
+  }
+
+  const response = await fetch(providerRequest);
+  if (!response.ok) throw new Error(errorMessage);
+  return response.json();
 }
 
 const form = document.querySelector("#search-form");
@@ -155,14 +176,20 @@ function makeSavedCityCard(location) {
 }
 
 async function getCurrentWeather(location) {
-  const url = apiUrl("/api/current", {
+  const coordinates = {
     latitude: String(location.latitude),
     longitude: String(location.longitude),
-    unit: temperatureUnit,
-  });
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Weather unavailable");
-  return response.json();
+  };
+  return fetchWeatherJson(
+    apiUrl("/api/current", { ...coordinates, unit: temperatureUnit }),
+    providerUrl(FORECAST_URL, {
+      ...coordinates,
+      current: "temperature_2m,weather_code",
+      temperature_unit: temperatureUnit,
+      timezone: "auto",
+    }),
+    "Weather unavailable",
+  );
 }
 
 function renderSavedCities(preferredLocation = null, preferredForecast = null) {
@@ -193,23 +220,34 @@ function renderSavedCities(preferredLocation = null, preferredForecast = null) {
 }
 
 async function findCities(cityName, regionName) {
-  const url = apiUrl("/api/locations", { city: cityName, region: regionName });
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("City search is unavailable right now.");
-  const data = await response.json();
+  const parameters = { name: `${cityName}, ${regionName}`, count: "5", language: "en", format: "json" };
+  const data = await fetchWeatherJson(
+    apiUrl("/api/locations", { city: cityName, region: regionName }),
+    providerUrl(GEOCODING_URL, parameters),
+    "City search is unavailable right now.",
+  );
   if (!data.results?.length) throw new Error("We couldn’t find that city and region. Check the spelling or try the country name.");
   return data.results;
 }
 
 async function getForecast(location) {
-  const url = apiUrl("/api/forecast", {
+  const coordinates = {
     latitude: String(location.latitude),
     longitude: String(location.longitude),
-    unit: temperatureUnit,
-  });
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("The forecast service is unavailable right now.");
-  return response.json();
+  };
+  return fetchWeatherJson(
+    apiUrl("/api/forecast", { ...coordinates, unit: temperatureUnit }),
+    providerUrl(FORECAST_URL, {
+      ...coordinates,
+      current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
+      daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+      hourly: "temperature_2m,precipitation_probability,weather_code",
+      temperature_unit: temperatureUnit,
+      timezone: "auto",
+      forecast_days: "5",
+    }),
+    "The forecast service is unavailable right now.",
+  );
 }
 
 function dayName(date, index) {

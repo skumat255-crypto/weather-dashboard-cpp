@@ -10,7 +10,7 @@ docs/      Responsive browser dashboard (HTML, CSS, JavaScript)
 src/       C++17 command-line weather client
 ```
 
-The web frontend talks to the backend for city search and weather data. The backend validates coordinates and units, calls Open-Meteo, and returns a consistent JSON response. The C++ client remains a standalone terminal app and calls Open-Meteo directly.
+The web frontend talks to the backend for city search and weather data. The backend validates coordinates and units, calls Open-Meteo, and returns a consistent JSON response. If the hosted proxy is unavailable or rate-limited, the browser falls back to Open-Meteo directly. The C++ client remains a standalone terminal app and calls Open-Meteo directly.
 
 ## Web app and backend
 

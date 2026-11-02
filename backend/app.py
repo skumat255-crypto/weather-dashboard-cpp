@@ -55,7 +55,10 @@ async def open_meteo_json(endpoint: str, parameters: dict[str, str]) -> dict:
             response.raise_for_status()
             return response.json()
     except (httpx.HTTPError, ValueError) as error:
-        logger.warning("Open-Meteo request failed: %s", error, exc_info=True)
+        if isinstance(error, httpx.HTTPStatusError):
+            logger.warning("Open-Meteo returned HTTP %s", error.response.status_code)
+        else:
+            logger.warning("Open-Meteo request failed (%s)", type(error).__name__)
         raise HTTPException(
             status_code=502,
             detail="The weather provider is unavailable. Please try again shortly.",

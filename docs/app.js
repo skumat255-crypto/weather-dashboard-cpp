@@ -1,5 +1,10 @@
-const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
-const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+const API_BASE_URL = (window.WEATHER_API_BASE_URL ?? "").replace(/\/$/, "");
+
+function apiUrl(path, parameters) {
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.href);
+  url.search = new URLSearchParams(parameters);
+  return url;
+}
 
 const form = document.querySelector("#search-form");
 const cityInput = document.querySelector("#city-input");
@@ -150,13 +155,10 @@ function makeSavedCityCard(location) {
 }
 
 async function getCurrentWeather(location) {
-  const url = new URL(FORECAST_URL);
-  url.search = new URLSearchParams({
+  const url = apiUrl("/api/current", {
     latitude: String(location.latitude),
     longitude: String(location.longitude),
-    current: "temperature_2m,weather_code",
-    temperature_unit: temperatureUnit,
-    timezone: "auto",
+    unit: temperatureUnit,
   });
   const response = await fetch(url);
   if (!response.ok) throw new Error("Weather unavailable");
@@ -191,8 +193,7 @@ function renderSavedCities(preferredLocation = null, preferredForecast = null) {
 }
 
 async function findCities(cityName, regionName) {
-  const url = new URL(GEOCODING_URL);
-  url.search = new URLSearchParams({ name: `${cityName}, ${regionName}`, count: "5", language: "en", format: "json" });
+  const url = apiUrl("/api/locations", { city: cityName, region: regionName });
   const response = await fetch(url);
   if (!response.ok) throw new Error("City search is unavailable right now.");
   const data = await response.json();
@@ -201,16 +202,10 @@ async function findCities(cityName, regionName) {
 }
 
 async function getForecast(location) {
-  const url = new URL(FORECAST_URL);
-  url.search = new URLSearchParams({
+  const url = apiUrl("/api/forecast", {
     latitude: String(location.latitude),
     longitude: String(location.longitude),
-    current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
-    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-    hourly: "temperature_2m,precipitation_probability,weather_code",
-    temperature_unit: temperatureUnit,
-    timezone: "auto",
-    forecast_days: "5",
+    unit: temperatureUnit,
   });
   const response = await fetch(url);
   if (!response.ok) throw new Error("The forecast service is unavailable right now.");

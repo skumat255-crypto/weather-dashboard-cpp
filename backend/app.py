@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from pathlib import Path
 from typing import Literal
 
@@ -22,6 +23,7 @@ FORECAST_CURRENT_FIELDS = (
 )
 DAILY_FIELDS = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
 HOURLY_FIELDS = "temperature_2m,precipitation_probability,weather_code"
+logger = logging.getLogger("weather_dashboard.api")
 
 app = FastAPI(
     title="Skyline Weather API",
@@ -53,6 +55,7 @@ async def open_meteo_json(endpoint: str, parameters: dict[str, str]) -> dict:
             response.raise_for_status()
             return response.json()
     except (httpx.HTTPError, ValueError) as error:
+        logger.warning("Open-Meteo request failed: %s", error, exc_info=True)
         raise HTTPException(
             status_code=502,
             detail="The weather provider is unavailable. Please try again shortly.",
